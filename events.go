@@ -23,22 +23,9 @@ func NewEventEmitter() *EventEmitter {
 	return &EventEmitter{events: make(map[string][]*eventHandler)}
 }
 
-// global cache
-var eventHandlerCache = &struct {
-	sync.RWMutex
-	cache map[uintptr]*eventHandler
-}{cache: make(map[uintptr]*eventHandler)}
-
 func genEventHandler(fn interface{}) (handler *eventHandler, err error) {
-	// if a handler have been generated before, use it first
 	fnValue := reflect.ValueOf(fn)
-	eventHandlerCache.RLock()
-	if handler, ok := eventHandlerCache.cache[fnValue.Pointer()]; ok {
-		eventHandlerCache.RUnlock()
-		return handler, nil
-	}
-	eventHandlerCache.RUnlock()
-	handler = new(eventHandler)
+  handler = new(eventHandler)
 	if reflect.TypeOf(fn).Kind() != reflect.Func {
 		err = fmt.Errorf("%v is not a function", fn)
 		return
@@ -60,9 +47,6 @@ func genEventHandler(fn interface{}) (handler *eventHandler, err error) {
 	for i := 1; i < nArgs; i++ {
 		handler.args[i] = fnType.In(i)
 	}
-	eventHandlerCache.Lock()
-	eventHandlerCache.cache[fnValue.Pointer()] = handler
-	eventHandlerCache.Unlock()
 	return
 }
 
